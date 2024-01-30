@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>WebGPU Speculative Progressive Isosurface Raycaster</title>
+<script defer src="main.js"></script></head>
+
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h4>WebGPU Speculative Progressive Isosurface Raycaster</h4>
+                <canvas id="webgpu-canvas" class="img-fluid" width="1920" height="1088"></canvas>
+            </div>
+            <div class="col-12 col-lg-8 mx-auto row">
+                <div class="col-12 text-center" id="autobenchmark-status-div" hidden>
+                    <h3 id="autobenchmark-status"></h3>
+                </div>
+                <div class="form-group col-8">
+                    <label for="isovalue">Isovalue</label>
+                    <input type="range" class="form-control-range" id="isovalue" min="0.0" max="255.0" step="1">
+                </div>
+                <div class="form-group col-4">
+                    <select name="resolution" id="resolution">
+                        <option value="720">720p</option>
+                        <option value="1080">1080p</option>
+                        <option value="360">360p</option>
+                      </select>
+                    <label for="resolution">Resolution</label>
+                </div>
+                <div class="form-group col-3">
+                    <input type="checkbox" class="form-check-input" id="enableCache">
+                    <label for="enableCache">Enable Cache</label>
+                </div>
+                <div class="form-group col-3">
+                    <input type="checkbox" class="form-check-input" id="outputImages">
+                    <label for="outputImages">Output Images</label>
+                </div>
+                <div class="form-group col-3">
+                    <input type="checkbox" class="form-check-input" id="colorActive" checked>
+                    <label for="colorActive">Color Active Rays</label>
+                </div>
+                <div class="form-group col-3">
+                    <input type="checkbox" class="form-check-input" id="recordVisibleBlocks">
+                    <label for="recordVisibleBlocks">Record Active/Visible Blocks Stats</label>
+                </div>
+                <div class="form-group col-3">
+                    <input type="checkbox" class="form-check-input" id="enableSpeculation">
+                    <label for="enableSpeculation">Enable Speculation</label>
+                </div>
+                <div class="form-group col-3">
+                    <label for="startSpecCount">Starting Speculation Count</label>
+                    <input type="number" class="form-control-range" id="startSpecCount" value="1" min="1" max="64" step="1">
+                </div>
+                <div class="form-group col-3">
+                    <input type="checkbox" class="form-check-input" id="infer">
+                    <label for="infer">Infer Completion</label>
+                </div>
+                <div class="form-group col-3">
+                    <label for="completenessThreshold">Image Completeness Threshold</label>
+                    <input type="number" class="form-control-range" id="completenessThreshold" value="1" min="0" max="1" step="0.01">
+                </div>
+                <div class="col-4 row text-left">
+                    <p id="fps"></p>
+                </div>
+                <div class="col-4 row text-left">
+                    <p id="mcInfo"></p>
+                </div>
+            </div>
+            <div class="row col-12 col-lg-8 text-left mx-auto mb-2">
+                <p>See the paper for more details (link soon!), or checkout
+                the code on <a href="https://github.com/Twinklebear/webgpu-prog-iso">Github</a>!
+            </div>
+            <div class="row col-12 col-lg-8 text-left mx-auto mb-2">
+                <div class="col-12 row text-left">
+                    <p id="cacheInfo"></p>
+                </div>
+                <div class="col-12 row text-left">
+                    <div class="col-12 text-left">
+                        <p id="totalMemDisplay"></p>
+                    </div>
+                    <div class="col-6 text-left">
+                        <p id="mcMemDisplay"></p>
+                    </div>
+                    <div class="col-6 text-left">
+                        <p id="cacheMemDisplay"></p>
+                    </div>
+                </div>
+                <div class="col-12 text-left">
+                    <p id="camDisplay"></p>
+                </div>
+
+                <button href="javascript:void(0);" id="runRandomBenchmark"
+                    type="button" class="btn btn-primary mr-1">Random Benchmark</button>
+                <button href="javascript:void(0);" id="runSweepUp"
+                    type="button"
+                    class="btn btn-primary mr-1">Sweep Up Benchmark</button>
+                <button href="javascript:void(0);" id="runSweepDown"
+                    type="button"
+                    class="btn btn-primary">Sweep Down Benchmark</button>
+                <button href="javascript:void(0);" id="runRotate"
+                    type="button"
+                    class="btn btn-primary mr-1 mt-1">Rotation Benchmark</button>
+                <button href="javascript:void(0);"
+                    id="recomputeSurface" type="button"
+                    class="btn btn-primary mr-1 mt-1">Recompute Surface (for benchmarking)</button>
+                <button href="javascript:void(0);"
+                    id="saveScreenShotButton" type="button"
+                    class="btn btn-primary mr-1 mt-1">Take Screenshot</button>
+            </div>
+        </div>
+    </div>
+    <img id="image">
+    <canvas id="out-canvas" width="1280" height="720" style="display: none;"></canvas>
+</body>
+
+</html>

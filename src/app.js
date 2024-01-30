@@ -100,7 +100,7 @@ import {InferenceSession} from "onnxruntime-web/webgpu";
     var volumeDims = getVolumeDimensions(dataset.name);
     var zfpDataName = dataset.name + ".zfp";
     var volumeURL = null;
-    if (window.location.hostname == "www.willusher.io") {
+    if (window.location.hostname != "localhost") {
         volumeURL = "https://cdn.willusher.io/bcmc-demo-data/" + zfpDataName;
     } else {
         volumeURL = "/models/bcmc-data/" + zfpDataName;
