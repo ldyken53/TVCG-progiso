@@ -10,4 +10,4 @@ glslc.exe
 node_modules
 dist/
 src/embedded_shaders.js
-.wasms/*
+.wasms/
