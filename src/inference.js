@@ -7,12 +7,11 @@ export function cleanRecurrentState() {
     recurrentState = false;
 }
 
-export async function runInference(session, preprocessedData, width, height, gpuBuffer=null) {
+export async function runInference(session, gpuBuffer, width, height) {
     // Get start time to calculate inference time.
     // create feeds with the input name from model export and the preprocessed data.
     const feeds = {};
     const architecture = [32, 64, 64, 80];
-    // feeds[session.inputNames[0]] = preprocessedData;
     feeds[session.inputNames[0]] = ort.Tensor.fromGpuBuffer(gpuBuffer, {
       dataType: 'float32',
       dims: [1, 3, height, width]

@@ -599,19 +599,8 @@ import * as ort from 'onnxruntime-web/webgpu';
                 // }
             }
             if (document.getElementById("infer").checked && surfaceDone) {
-                var commandEncoder = device.createCommandEncoder();
-                commandEncoder.copyTextureToBuffer({texture: volumeRC.renderTarget},
-                    {buffer: imageBuffer, bytesPerRow: width * 4},
-                    [width, height, 1]);
-                device.queue.submit([commandEncoder.finish()]);
-                await device.queue.onSubmittedWorkDone();
-
-                await imageBuffer.mapAsync(GPUMapMode.READ);
-                var imageReadbackArray = new Uint8ClampedArray(imageBuffer.getMappedRange());
-                var inputTensor = imageDataToTensor(imageReadbackArray, [1, 3, height, width]);
-                imageBuffer.unmap();
                 try {
-                    var [results, inferenceTime] = await runInference(session, inputTensor, width, height, volumeRC.imageTensorBuffer);
+                    var [results, inferenceTime] = await runInference(session, volumeRC.imageTensorBuffer, width, height,);
                     // console.log("results", results);
                     console.log("inference time", inferenceTime);
                     console.log("Time for kernels", sum);
