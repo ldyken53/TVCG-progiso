@@ -222,6 +222,11 @@ export var VolumeRaycaster = function(
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
+    this.imageTensorBuffer = device.createBuffer({
+        size: this.width * this.height * 3 * 4,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+    });
+
     // Each ray stores 2 iterator states, the coarse one followed by the fine one.
     // Each state is 32b
     this.gridIteratorBuffer = device.createBuffer({
@@ -234,7 +239,8 @@ export var VolumeRaycaster = function(
             {binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: {type: "storage"}},
             {binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: {type: "uniform"}},
             {binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: {type: "storage"}},
-            {binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: {type: "uniform"}}
+            {binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: {type: "storage"}},
+            {binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: {type: "uniform"}}
         ]
     });
 
@@ -386,7 +392,10 @@ export var VolumeRaycaster = function(
         ]
     });
     this.depthCompositeBG1Layout = device.createBindGroupLayout({
-        entries: [{binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: {type: "storage"}}]
+        entries: [
+            {binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: {type: "storage"}}, 
+            {binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: {type: "storage"}}
+        ]
     });
 
     this.depthCompositePipeline = device.createComputePipeline({
@@ -742,10 +751,17 @@ export var VolumeRaycaster = function(
             {
                 binding: 2,
                 visibility: GPUShaderStage.COMPUTE,
-                texture: { viewDimension: "2d" }
+                buffer: {
+                    type: "storage",
+                }
             },
             {
                 binding: 3,
+                visibility: GPUShaderStage.COMPUTE,
+                texture: { viewDimension: "2d" }
+            },
+            {
+                binding: 4,
                 visibility: GPUShaderStage.COMPUTE,
                 storageTexture: { access: "write-only", format: renderTargetFormat }
             },
@@ -946,6 +962,7 @@ VolumeRaycaster.prototype.setCompressedVolume =
         buf.set(this.paddedDims, 4);
         buf.set([maxBits], 12);
         buf.set([this.width], 14);
+        buf.set([this.height], 15);
 
         var buf = new Float32Array(mapping);
         buf.set(volumeScale, 8);
@@ -999,7 +1016,8 @@ VolumeRaycaster.prototype.setCompressedVolume =
             {binding: 0, resource: {buffer: this.rayInformationBuffer}},
             {binding: 1, resource: {buffer: this.volumeInfoBuffer}},
             {binding: 2, resource: {buffer: this.rayBlockIDBuffer}},
-            {binding: 3, resource: {buffer: this.viewParamBuf}}
+            {binding: 3, resource: {buffer: this.imageTensorBuffer}},
+            {binding: 4, resource: {buffer: this.viewParamBuf}}
         ]
     });
 
@@ -1028,6 +1046,7 @@ VolumeRaycaster.prototype.setCompressedVolume =
         layout: this.depthCompositeBG1Layout,
         entries: [
             {binding: 0, resource: {buffer: this.rayInformationBuffer}},
+            {binding: 1, resource: {buffer: this.imageTensorBuffer}}
         ]
     });
 
@@ -1164,8 +1183,9 @@ VolumeRaycaster.prototype.setCompressedVolume =
         entries: [
             {binding: 0, resource: {buffer: this.volumeInfoBuffer}},
             {binding: 1, resource: {buffer: this.rayAfterActiveBuffer}},
-            {binding: 2, resource: this.renderTargetCopy.createView()},
-            {binding: 3, resource: this.renderTarget.createView()}
+            {binding: 2, resource: {buffer: this.imageTensorBuffer}},
+            {binding: 3, resource: this.renderTargetCopy.createView()},
+            {binding: 4, resource: this.renderTarget.createView()}
         ]
     });
 };

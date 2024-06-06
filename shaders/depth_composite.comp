@@ -34,11 +34,16 @@ layout(set = 0, binding = 4, std140) uniform VolumeParams
     uint max_bits;
     float isovalue;
     uint image_width;
+    uint image_height;
 };
 
 layout(set = 1, binding = 0, std430) buffer RayInformation
 {
     RayInfo rays[];
+};
+
+layout(set = 1, binding = 1, std430) buffer ImageTensor {
+    float tensor[];
 };
 
 void main(void)
@@ -79,5 +84,8 @@ void main(void)
         color.rgb = fog * color.rgb + (1.f - fog) * vec3(1.f);
 #endif
         imageStore(render_target, pixel_coords, vec4(color.rgb, 1.f));
+        tensor[ray_index] = color.r;
+        tensor[ray_index + image_width * image_height] = color.g;
+        tensor[ray_index + image_width * image_height * 2] = color.b;
     }
 }

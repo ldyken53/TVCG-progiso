@@ -1,25 +1,29 @@
 import 'jimp';
-import {Tensor, InferenceSession} from "onnxruntime-web/webgpu";
-// import * as ort from "onnxruntime-web"; 
+import * as ort from "onnxruntime-web/webgpu";
+
 var recurrentState = false;
 
 export function cleanRecurrentState() {
     recurrentState = false;
 }
 
-export async function runInference(session, preprocessedData, width, height) {
+export async function runInference(session, preprocessedData, width, height, gpuBuffer=null) {
     // Get start time to calculate inference time.
     // create feeds with the input name from model export and the preprocessed data.
     const feeds = {};
     const architecture = [32, 64, 64, 80];
-    feeds[session.inputNames[0]] = preprocessedData;
+    // feeds[session.inputNames[0]] = preprocessedData;
+    feeds[session.inputNames[0]] = ort.Tensor.fromGpuBuffer(gpuBuffer, {
+      dataType: 'float32',
+      dims: [1, 3, height, width]
+    });
     for (var i = 0; i < session.inputNames.length - 1; i++) {
         if (recurrentState) {
             feeds[session.inputNames[i + 1]] = recurrentState[i];
         } else {
             var w = width / 2**i;
             var h = height / 2**i;
-            feeds[session.inputNames[session.inputNames.length - i - 1]] = new Tensor("float32", 
+            feeds[session.inputNames[session.inputNames.length - i - 1]] = new ort.Tensor("float32", 
                 new Float32Array(architecture[i] * w * h), 
                 [1, architecture[i], h, w]
             );
@@ -27,14 +31,14 @@ export async function runInference(session, preprocessedData, width, height) {
     }
     const start = new Date();  
     const outputData = await session.run(feeds);
-    const results = outputData[session.outputNames[0]].data;
+    const end = new Date();
+    const results = await outputData[session.outputNames[0]].data;
     recurrentState = [
         outputData[session.outputNames[3]],
         outputData[session.outputNames[4]],
         outputData[session.outputNames[5]],
         outputData[session.outputNames[6]]
     ];
-    const end = new Date();
     const inferenceTime = Math.round(end.getTime() - start.getTime());
   
     return [results, inferenceTime];
@@ -82,7 +86,7 @@ export async function getImageTensorFromPath(path, dims) {
       float32Data[i] = transposedData[i] / 255.0; // convert to float
     }
     // 5. create the tensor object from onnxruntime-web.
-    const inputTensor = new Tensor("float32", float32Data, dims);
+    const inputTensor = new ort.Tensor("float32", float32Data, dims);
     return inputTensor;
   }
   

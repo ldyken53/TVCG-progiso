@@ -17,13 +17,18 @@ layout(set = 0, binding = 1, std140) uniform VolumeParams
     uint max_bits;
     float isovalue;
     uint image_width;
+    uint image_height;
 };
 layout(set = 0, binding = 2, std430) buffer RayBlockIDs
 {
     uint block_ids[];
 };
+layout(set = 0, binding = 3, std430) buffer ImageTensor
+{
+    float tensor[];
+};
 
-layout(set = 0, binding = 3, std140) uniform ViewParams
+layout(set = 0, binding = 4, std140) uniform ViewParams
 {
     mat4 proj_view;
     vec4 eye_pos;
@@ -40,6 +45,9 @@ void main() {
     uint ray_index = gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * image_width;
     rays[ray_index].ray_dir = vec3(0);
     rays[ray_index].t = FLT_MAX;
+    tensor[ray_index] = 1.0;
+    tensor[ray_index + image_width * image_height] = 1.0;
+    tensor[ray_index + image_width * image_height * 2] = 1.0;    
     for (uint i = 0; i < speculation_count; i++) {
         block_ids[ray_index * speculation_count + i] = UINT_MAX;
     }

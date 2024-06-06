@@ -12,15 +12,20 @@ layout(set = 0, binding = 0, std140) uniform VolumeParams
     uint max_bits;
     float isovalue;
     uint image_width;
+    uint image_height;
 };
 
 layout(set = 0, binding = 1, std430) buffer RayActive
 {
     uint ray_active[];
 };
+layout(set = 0, binding = 2, std430) buffer ImageTensor
+{
+    float tensor[];
+};
 
-uniform layout(set = 0, binding = 2, rgba8) readonly image2D render_target_copy;
-uniform layout(set = 0, binding = 3, rgba8) writeonly image2D render_target;
+uniform layout(set = 0, binding = 3, rgba8) readonly image2D render_target_copy;
+uniform layout(set = 0, binding = 4, rgba8) writeonly image2D render_target;
 
 void main() {
     if (gl_GlobalInvocationID.x >= image_width) {
@@ -32,11 +37,17 @@ void main() {
         ivec2 pixel_coords = ivec2(ray_index % image_width, ray_index / image_width);
         vec4 color = imageLoad(render_target_copy, pixel_coords);
         imageStore(render_target, pixel_coords, vec4(1.f, 0.f, 0.f, 1.f));
+        tensor[ray_index] = 1.f;
+        tensor[ray_index + image_width * image_height] = 0.f;
+        tensor[ray_index + image_width * image_height * 2] = 0.f;
     } else {
         ivec2 pixel_coords = ivec2(ray_index % image_width, ray_index / image_width);
         vec4 color = imageLoad(render_target_copy, pixel_coords);
         if (color.r == 1.f) {
             imageStore(render_target, pixel_coords, vec4(1.f, 1.f, 1.f, 1.f));
+            tensor[ray_index] = 1.f;
+            tensor[ray_index + image_width * image_height] = 1.f;
+            tensor[ray_index + image_width * image_height * 2] = 1.f;
         }
     }
 }

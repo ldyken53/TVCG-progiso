@@ -6,9 +6,11 @@ import {display_render_frag_spv, display_render_vert_spv} from "./embedded_shade
 import {vec3, mat4} from "gl-matrix";
 import {saveAs} from 'file-saver';
 import {imageDataToTensor, runInference, getImageTensorFromPath, cleanRecurrentState} from "./inference";
-import {InferenceSession} from "onnxruntime-web/webgpu";
+import * as ort from 'onnxruntime-web/webgpu';
 
 (async () => {
+    console.log(self.crossOriginIsolated);
+    console.log("test")
     function runBenchmark(benchmark) {
         requestBenchmark = benchmark;
     }
@@ -47,26 +49,6 @@ import {InferenceSession} from "onnxruntime-web/webgpu";
     document.getElementById("recomputeSurface").onclick = () => {runBenchmark("manualSingle")};
     document.getElementById("saveScreenShotButton").onclick = () => {saveScreenShotButton()};
 
-    var adapter = await navigator.gpu.requestAdapter();
-    console.log(adapter.limits);
-
-    var gpuDeviceDesc = {
-        requiredLimits: {
-            maxStorageBuffersPerShaderStage: adapter.limits.maxStorageBuffersPerShaderStage,
-            maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
-            maxBufferSize: adapter.limits.maxBufferSize
-        },
-    };
-    var device = await adapter.requestDevice(gpuDeviceDesc);
-    var canvas = document.getElementById("webgpu-canvas");
-    var context = canvas.getContext("webgpu");
-
-    var requestBenchmark = null;
-    var saveScreenshot = false;
-
-    var benchmarkConfigs = generateBenchmarkConfigurations();
-    console.log(`# of benchmarkConfigs to run ${benchmarkConfigs.length}`);
-
     var dataset = datasets.skull;
     let autobenchmarkIndex = -1;
     if (window.location.hash) {
@@ -97,6 +79,66 @@ import {InferenceSession} from "onnxruntime-web/webgpu";
             `Autobenchmark ${autobenchmarkIndex + 1}/${benchmarkConfigs.length}`;
     }
 
+    var resolution = document.getElementById("resolution");
+    var resolutionDims = {"1080": [1920, 1088], "720": [1280, 720], "360": [640, 368]};
+    var width = resolutionDims[resolution.value][0];
+    var height = resolutionDims[resolution.value][1];
+    if (autobenchmarkConfig) {
+        width = resolutionDims[autobenchmarkConfig.resolution][0];
+        height = resolutionDims[autobenchmarkConfig.resolution][1];
+    }
+
+    var adapter = await navigator.gpu.requestAdapter();
+    console.log(adapter.limits);
+    var session;
+    try {
+        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
+        // ort.env.debug = true;
+        ort.env.trace = true;        
+        ort.env.logLevel = 'verbose';
+        var sum = 0;
+        var sums = [];
+        ort.env.webgpu.profiling = {
+            mode: 'default',
+            ondata: (data) => {
+                // handle the profiling data
+                sum += (data.endTime - data.startTime) * 0.000001;
+                sums.push((data.endTime - data.startTime) * 0.000001);
+                if ((data.endTime - data.startTime) * 0.000001 > 1) {
+                    console.log(`[profiling] ${data.kernelName}: ${(data.endTime - data.startTime) * 0.000001}ms`);
+                }
+            }
+        };
+        session = await ort.InferenceSession.create(`./noof${width}.onnx`,
+            {executionProviders: ['webgpu'], graphOptimizationLevel: 'all'
+
+        });
+        console.log(session);
+        var imageReadbackArray = new Uint8ClampedArray(width * height);
+        var inputTensor = imageDataToTensor(imageReadbackArray, [1, 3, height, width]);
+    } catch (e) {
+        console.log(e);
+    }
+    var device = ort.env.webgpu.device;
+    console.log(device);
+
+    // var gpuDeviceDesc = {
+    //     requiredLimits: {
+    //         maxStorageBuffersPerShaderStage: adapter.limits.maxStorageBuffersPerShaderStage,
+    //         maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+    //         maxBufferSize: adapter.limits.maxBufferSize
+    //     },
+    // };
+    // var device = await adapter.requestDevice(gpuDeviceDesc);
+    var canvas = document.getElementById("webgpu-canvas");
+    var context = canvas.getContext("webgpu");
+
+    var requestBenchmark = null;
+    var saveScreenshot = false;
+
+    var benchmarkConfigs = generateBenchmarkConfigurations();
+    console.log(`# of benchmarkConfigs to run ${benchmarkConfigs.length}`);
+
     var volumeDims = getVolumeDimensions(dataset.name);
     var zfpDataName = dataset.name + ".zfp";
     var volumeURL = null;
@@ -113,14 +155,6 @@ import {InferenceSession} from "onnxruntime-web/webgpu";
     if (compressedData == null) {
         alert(`Failed to load compressed data`);
         return;
-    }
-    var resolution = document.getElementById("resolution");
-    var resolutionDims = {"1080": [1920, 1088], "720": [1280, 720], "360": [640, 368]};
-    var width = resolutionDims[resolution.value][0];
-    var height = resolutionDims[resolution.value][1];
-    if (autobenchmarkConfig) {
-        width = resolutionDims[autobenchmarkConfig.resolution][0];
-        height = resolutionDims[autobenchmarkConfig.resolution][1];
     }
 
     var imageBuffer = device.createBuffer({
@@ -153,17 +187,6 @@ import {InferenceSession} from "onnxruntime-web/webgpu";
     var enableSpeculationUI = document.getElementById("enableSpeculation");
     enableSpeculationUI.checked = true;
     var recordVisibleBlocksUI = document.getElementById("recordVisibleBlocks")
-
-    var session;
-    try {
-        session = await InferenceSession.create(`./noof${width}.onnx`,
-            {executionProviders: ['webgpu'], graphOptimizationLevel: 'all'});
-        console.log(session);
-        var imageReadbackArray = new Uint8ClampedArray(width * height);
-        var inputTensor = imageDataToTensor(imageReadbackArray, [1, 3, height, width]);
-    } catch (e) {
-        console.log(e);
-    }
 
     let completenessThreshold = document.getElementById("completenessThreshold");
     var outCanvas = document.getElementById("out-canvas");
@@ -212,9 +235,9 @@ import {InferenceSession} from "onnxruntime-web/webgpu";
             size: width * height * 4,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
-
-        session = await InferenceSession.create(`./noof${width}.onnx`,
-            {executionProviders: ['webgpu'], graphOptimizationLevel: 'all'});
+        session = await ort.InferenceSession.create(`./noof${width}.onnx`,
+            {executionProviders: ['webgpu'], graphOptimizationLevel: 'all'
+        });
         cleanRecurrentState();
     };
     headstartSlider.onchange = async () => {
@@ -588,9 +611,12 @@ import {InferenceSession} from "onnxruntime-web/webgpu";
                 var inputTensor = imageDataToTensor(imageReadbackArray, [1, 3, height, width]);
                 imageBuffer.unmap();
                 try {
-                    var [results, inferenceTime] = await runInference(session, inputTensor, width, height);
+                    var [results, inferenceTime] = await runInference(session, inputTensor, width, height, volumeRC.imageTensorBuffer);
                     // console.log("results", results);
                     console.log("inference time", inferenceTime);
+                    console.log("Time for kernels", sum);
+                    // console.log(sums);
+                    sum = 0;
                     var textureData = new Uint8ClampedArray(results.length + width * height);
                     // var min = 32767, max = 0;
                     // for (var i = 0; i < results.length; i++) {

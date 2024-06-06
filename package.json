@@ -31,7 +31,6 @@
     "jimp": "^0.22.10",
     "ndarray": "^1.0.19",
     "ndarray-ops": "^1.2.2",
-    "onnxruntime-common": "file:onnxruntime-common-1.17.0.tgz",
-    "onnxruntime-web": "file:onnxruntime-web-1.17.0.tgz"
+    "onnxruntime-web": "^1.18.0"
   }
 }
