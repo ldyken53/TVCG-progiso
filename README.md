@@ -20,7 +20,7 @@ Then back to the top folder run
 npm run build
 ```
 
-Then move the files in "ml-models" along with the "ort-wasm-simd*" files into the built dist/ folder. Then create a folder
+Then move the files in "ml-models" into the built dist/ folder. Then create a folder
 "models/bcmc-data" in dist/ and populate with the zfp compressed datasets. 
 
 You can then serve the application from the dist/ folder using 
