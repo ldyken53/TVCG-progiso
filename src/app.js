@@ -2,15 +2,14 @@ import {datasets, getVolumeDimensions} from "./volumes";
 import {VolumeRaycaster} from "./volume_raycaster";
 import {RandomIsovalueBenchmark, ManualSingleBenchmark, SweepIsovalueBenchmark, NestedBenchmark, RotateBenchmark, generateBenchmarkConfigurations} from './run_benchmark';
 import {Controller, ArcballCamera} from "./webgl-util";
-import {display_render_frag_spv, display_render_vert_spv} from "./embedded_shaders";
+import {display_render_frag_spv, display_render_vert_spv, tensor_to_texture_comp_spv} from "./embedded_shaders";
 import {vec3, mat4} from "gl-matrix";
 import {saveAs} from 'file-saver';
-import {imageDataToTensor, runInference, getImageTensorFromPath, cleanRecurrentState} from "./inference";
+import {InferenceSessionWGPU} from "./inference_session";
 import * as ort from 'onnxruntime-web/webgpu';
 
 (async () => {
     console.log(self.crossOriginIsolated);
-    console.log("test")
     function runBenchmark(benchmark) {
         requestBenchmark = benchmark;
     }
@@ -90,35 +89,25 @@ import * as ort from 'onnxruntime-web/webgpu';
 
     var adapter = await navigator.gpu.requestAdapter();
     console.log(adapter.limits);
-    var session;
-    try {
-        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
-        // ort.env.debug = true;
-        ort.env.trace = true;        
-        ort.env.logLevel = 'verbose';
-        var sum = 0;
-        var sums = [];
-        ort.env.webgpu.profiling = {
-            mode: 'default',
-            ondata: (data) => {
-                // handle the profiling data
-                sum += (data.endTime - data.startTime) * 0.000001;
-                sums.push((data.endTime - data.startTime) * 0.000001);
-                if ((data.endTime - data.startTime) * 0.000001 > 1) {
-                    console.log(`[profiling] ${data.kernelName}: ${(data.endTime - data.startTime) * 0.000001}ms`);
-                }
-            }
-        };
-        session = await ort.InferenceSession.create(`./noof${width}.onnx`,
-            {executionProviders: ['webgpu'], graphOptimizationLevel: 'all'
 
-        });
-        console.log(session);
-        var imageReadbackArray = new Uint8ClampedArray(width * height);
-        var inputTensor = imageDataToTensor(imageReadbackArray, [1, 3, height, width]);
-    } catch (e) {
-        console.log(e);
-    }
+    var sum = 0;
+    ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
+    // ort.env.debug = true;
+    // ort.env.trace = true;        
+    // ort.env.logLevel = 'verbose';
+    ort.env.webgpu.profiling = {
+        mode: 'default',
+        ondata: (data) => {
+            // handle the profiling data
+            sum += (data.endTime - data.startTime) * 0.000001;
+            // if ((data.endTime - data.startTime) * 0.000001 > 1) {
+            //     console.log(`[profiling] ${data.kernelName}: ${(data.endTime - data.startTime) * 0.000001}ms`);
+            // }
+        }
+    };
+    var session = await new InferenceSessionWGPU(width, height);
+    console.log(session);
+
     var device = ort.env.webgpu.device;
     console.log(device);
 
@@ -196,7 +185,7 @@ import * as ort from 'onnxruntime-web/webgpu';
         headstartSlider.value = autobenchmarkConfig.startSpecCount;
     }
     var volumeRC =
-        new VolumeRaycaster(device, width, height, recordVisibleBlocksUI, enableSpeculationUI, parseInt(headstartSlider.value));
+        new VolumeRaycaster(device, width, height, recordVisibleBlocksUI, enableSpeculationUI, parseInt(headstartSlider.value), session.inputBuffers[0]);
 
     resolution.onchange = async () => {
         width = resolutionDims[resolution.value][0];
@@ -217,9 +206,10 @@ import * as ort from 'onnxruntime-web/webgpu';
         //     width,
         //     height,
         // ]);
-
+        await session.release();
+        session = await new InferenceSessionWGPU(width, height);
         volumeRC = new VolumeRaycaster(
-            device, width, height, recordVisibleBlocksUI, enableSpeculationUI, parseInt(headstartSlider.value));
+            device, width, height, recordVisibleBlocksUI, enableSpeculationUI, parseInt(headstartSlider.value), session.inputBuffers[0]);
         await volumeRC.setCompressedVolume(
             compressedData, dataset.compressionRate, volumeDims, dataset.scale);
         recomputeSurface = true;
@@ -235,14 +225,10 @@ import * as ort from 'onnxruntime-web/webgpu';
             size: width * height * 4,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
-        session = await ort.InferenceSession.create(`./noof${width}.onnx`,
-            {executionProviders: ['webgpu'], graphOptimizationLevel: 'all'
-        });
-        cleanRecurrentState();
     };
     headstartSlider.onchange = async () => {
         volumeRC = new VolumeRaycaster(
-            device, width, height, recordVisibleBlocksUI, enableSpeculationUI, parseInt(headstartSlider.value));
+            device, width, height, recordVisibleBlocksUI, enableSpeculationUI, parseInt(headstartSlider.value), session.inputBuffers[0]);
         await volumeRC.setCompressedVolume(
             compressedData, dataset.compressionRate, volumeDims, dataset.scale);
         recomputeSurface = true;
@@ -364,6 +350,30 @@ import * as ort from 'onnxruntime-web/webgpu';
         totalTimeMS = 0;
     };
     controller.registerForCanvas(canvas);
+
+    var tensorToTextureBGLayout = device.createBindGroupLayout({
+        entries: [
+            {binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: {type: "storage"}},
+            {
+                binding: 1,
+                visibility: GPUShaderStage.COMPUTE,
+                storageTexture: {access: "write-only", format: "rgba8unorm"}
+            },
+            {binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: {type: "uniform"}},
+        ]
+    });
+
+    var tensorToTexturePipeline = device.createComputePipeline({
+        layout: device.createPipelineLayout({
+            bindGroupLayouts: [tensorToTextureBGLayout],
+        }),
+        compute: {
+            module: device.createShaderModule({
+                code: tensor_to_texture_comp_spv,
+            }),
+            entryPoint: "main",
+        },
+    });
 
     var animationFrame = function () {
         var resolve = null;
@@ -547,7 +557,7 @@ import * as ort from 'onnxruntime-web/webgpu';
         if (isovalueSlider.value != currentIsovalue) {
             recomputeSurface = true;
             currentIsovalue = parseFloat(isovalueSlider.value);
-            cleanRecurrentState();
+            session.cleanRecurrentState();
         }
 
         if (recomputeSurface || !surfaceDone) {
@@ -599,51 +609,30 @@ import * as ort from 'onnxruntime-web/webgpu';
                 // }
             }
             if (document.getElementById("infer").checked && surfaceDone) {
-                try {
-                    var [results, inferenceTime] = await runInference(session, volumeRC.imageTensorBuffer, width, height,);
-                    // console.log("results", results);
-                    console.log("inference time", inferenceTime);
-                    console.log("Time for kernels", sum);
-                    // console.log(sums);
-                    sum = 0;
-                    var textureData = new Uint8ClampedArray(results.length + width * height);
-                    // var min = 32767, max = 0;
-                    // for (var i = 0; i < results.length; i++) {
-                    //     if (results[i] < min) {
-                    //         min = results[i];
-                    //     }
-                    //     if (results[i] > max) {
-                    //         max = results[i]
-                    //     }
-                    // }
-                    // console.log("min", min);
-                    // console.log("max", max);
-                    // let testCanvas = document.getElementById("test-canvas");
-                    // let ctx = testCanvas.getContext("2d");
-                    // let idata = ctx.createImageData(canvas.width, canvas.height);
-                    // idata.data.set(textureData);
-                    // ctx.putImageData(idata, 0, 0);
+                var inferenceTime = await session.runInference();
+                console.log("inference time", inferenceTime);
+                console.log("Time for kernels", sum);
 
-                    var start = new Date();
-                    for (var i = 0; i < width * height; i++) {
-                        textureData[i * 4] = results[i] * 255;
-                        textureData[i * 4 + 1] = results[i + width * height] * 255;
-                        textureData[i * 4 + 2] = results[i + 2 * width * height] * 255;
-                        textureData[i * 4 + 3] = 255;
-                    }
-                    device.queue.writeTexture(
-                        {texture: volumeRC.renderTarget},
-                        textureData,
-                        {bytesPerRow: width * 4},
-                        {width: width, height: height}
-                    );
-                    await device.queue.onSubmittedWorkDone();
-                    var end = new Date();
-                    console.log("Texture write time", Math.round(end - start))
-                } catch (e) {
-                    console.log("ERROR WITH INFERENCE, CHECK DIMENSIONS");
-                    console.log(e)
-                }
+                var start = performance.now();
+                var tensorToTextureBG = device.createBindGroup({
+                    layout: tensorToTextureBGLayout,
+                    entries: [
+                        {binding: 0, resource: {buffer: session.outputBuffers[0]}},
+                        {binding: 1, resource: volumeRC.renderTarget.createView()},
+                        {binding: 2, resource: {buffer: volumeRC.volumeInfoBuffer}},
+                    ]
+                });
+                var commandEncoder = device.createCommandEncoder();
+                var pass = commandEncoder.beginComputePass();
+                pass.setPipeline(tensorToTexturePipeline);
+                pass.setBindGroup(0, tensorToTextureBG);
+                pass.dispatchWorkgroups(Math.ceil(width / 256), height, 1);
+                pass.end();
+                device.queue.submit([commandEncoder.finish()]);
+                sum = 0;
+                await device.queue.onSubmittedWorkDone();
+                var end = performance.now();
+                console.log("Texture write time", Math.round(end - start))
             }
             if (surfaceDone) {
                 perfStats.push(

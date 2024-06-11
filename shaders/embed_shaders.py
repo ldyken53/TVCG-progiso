@@ -50,7 +50,8 @@ shaders = [
     "reset_speculative_ids.comp",
     "depth_composite.comp",
     "mark_ray_active.comp",
-    "color_active_rays.comp"
+    "color_active_rays.comp",
+    "tensor_to_texture.comp"
 ]
 
 try:

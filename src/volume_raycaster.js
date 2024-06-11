@@ -6,7 +6,7 @@ import * as shaders from "./embedded_shaders";
 import { buildPushConstantsBuffer } from "./util";
 
 export var VolumeRaycaster = function(
-    device, width, height, recordVisibleBlocksUI, enableSpeculationUI, startSpecCount) {
+    device, width, height, recordVisibleBlocksUI, enableSpeculationUI, startSpecCount, imageTensorBuffer) {
     this.device = device;
     this.scanPipeline = new ExclusiveScanPipeline(device);
     this.streamCompact = new StreamCompact(device);
@@ -222,10 +222,7 @@ export var VolumeRaycaster = function(
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
-    this.imageTensorBuffer = device.createBuffer({
-        size: this.width * this.height * 3 * 4,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-    });
+    this.imageTensorBuffer = imageTensorBuffer;
 
     // Each ray stores 2 iterator states, the coarse one followed by the fine one.
     // Each state is 32b

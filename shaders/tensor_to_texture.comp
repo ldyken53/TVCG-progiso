@@ -1,0 +1,33 @@
+#version 450 core
+
+layout(local_size_x = 256) in;
+
+layout(set = 0, binding = 0, std430) buffer ImageTensor {
+    float tensor[];
+};
+
+uniform layout(set = 0, binding = 1, rgba8) writeonly image2D render_target;
+
+layout(set = 0, binding = 2, std140) uniform VolumeParams
+{
+    uvec4 volume_dims;
+    uvec4 padded_dims;
+    vec4 volume_scale;
+    uint max_bits;
+    float isovalue;
+    uint image_width;
+    uint image_height;
+};
+
+void main(void)
+{
+    if (gl_GlobalInvocationID.x >= image_width) {
+        return;
+    }
+    uint ray_index = gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * image_width;
+    vec3 color;
+    color.r = tensor[ray_index];
+    color.g = tensor[ray_index + image_width * image_height];
+    color.b = tensor[ray_index + image_width * image_height * 2]; 
+    imageStore(render_target, ivec2(gl_GlobalInvocationID.xy), vec4(color, 1.f));
+}
