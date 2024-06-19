@@ -79,7 +79,7 @@ import * as ort from 'onnxruntime-web/webgpu';
     }
 
     var resolution = document.getElementById("resolution");
-    var resolutionDims = {"1080": [1920, 1088], "720": [1280, 720], "360": [640, 368]};
+    var resolutionDims = {"1080": [1920, 1080], "720": [1280, 720], "360": [640, 360]};
     var width = resolutionDims[resolution.value][0];
     var height = resolutionDims[resolution.value][1];
     if (autobenchmarkConfig) {

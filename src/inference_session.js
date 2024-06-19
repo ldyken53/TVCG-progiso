@@ -6,13 +6,13 @@ export class InferenceSessionWGPU {
     return (async () => {
       this.width = width;
       this.height = height;
-      this.inputBuffers = [null, null, null, null, null];
-      this.inputTensors = [null, null, null, null, null];
-      this.outputBuffers = [null, null, null, null, null, null, null];
-      this.outputTensors = [null, null, null, null, null, null, null];
+      this.inputBuffers = [null, null, null, null];
+      this.inputTensors = [null, null, null, null];
+      this.outputBuffers = [null, null, null, null, null, null ];
+      this.outputTensors = [null, null, null, null, null, null];
 
       try {
-        this.session = await ort.InferenceSession.create(`./noof${width}.onnx`,{
+        this.session = await ort.InferenceSession.create(`./noof${width}-ultraminiv12.onnx`,{
           executionProviders: ['webgpu'], preferredOutputLocation: "gpu-buffer"
         });
         this.device = ort.env.webgpu.device;
@@ -50,7 +50,7 @@ export class InferenceSessionWGPU {
       });
 
 
-      this.architecture = [32, 64, 64, 80, 96];
+      this.architecture = [4, 8, 16, 32];
       for (var i = 0; i < this.inputBuffers.length - 1; i++) {
         var w = this.width / 2**i;
         var h = this.height / 2**i;
@@ -67,6 +67,7 @@ export class InferenceSessionWGPU {
           }          
         );
       }
+      console.log(this.inputTensors);
 
       for (var i = 0; i < this.outputBuffers.length - 2; i++) {
         var w = this.width / 2**i;
@@ -84,6 +85,7 @@ export class InferenceSessionWGPU {
           }          
         );
       }
+      console.log(this.outputTensors);
       return this;
     })();
   }
