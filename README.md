@@ -1,6 +1,16 @@
-# WebGPU Progressive Raycasting with ML Infill
-This repo expands https://github.com/Twinklebear/webgpu-prog-iso with multiple optimizations including first pass speculation, 
-starting with speculation using larger framebuffers, and ML infill using onnxruntime-web.
+# WebGPU Isosurface Visualization
+This repo holds the code for the TVCG paper, "Interactive Isosurface Visualization in Memory Constrained Environments Using Deep Learning and Speculative Raycasting" by Landon Dyken, Will Usher, and Sidharth Kumar. This work expands the algorithm of ["Speculative Progressive Raycasting for Memory Constrained Isosurface Visualization of Massive Volumes"](https://github.com/Twinklebear/webgpu-prog-iso) (LDAV 2023 Best Paper) by using a pretrained image reconstruction network to infer perceptual approximates from intermediate output, along with optimizing the speculative raycasting using first pass speculation and larger computational buffers to increase speculation counts in early passes.
+
+## Demo 
+There is an interactive demo for several datasets online:
+- [Magnetic Reconnection (Plasma)](https://ldyken53.github.io/TVCG-progiso/#dataset=magnetic) (512^3)
+- [Chameleon](https://ldyken53.github.io/TVCG-progiso/#dataset=chameleon) (1024x1024x1080)
+- [Miranda](https://ldyken53.github.io/TVCG-progiso/#dataset=miranda) (1024^3)
+- [Richtmyer Meshkov](https://ldyken53.github.io/TVCG-progiso/#dataset=richtmyer_meshkov) (2048x2048x1920)
+
+Note that due to initially loading the datasets, it will take some time for the rendering to appear when visiting the pages for the first time.
+
+All datasets are available on the [Open SciVis Datasets page](https://klacansky.com/open-scivis-datasets/). 
 
 ## Getting Started
 
