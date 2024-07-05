@@ -13,7 +13,16 @@ Note that due to initially loading the datasets, it will take some time for the 
 All datasets are available on the [Open SciVis Datasets page](https://klacansky.com/open-scivis-datasets/). 
 
 ## Getting Started
+For either install, it is necessary to be on a device with both npm and python installed.
 
+### Automatic Install
+After cloning the repo, install needed dependencies and start serving the application with
+```
+./run_server.sh
+```
+From here, the application will be served at localhost:8000.
+
+### Manual Install
 After cloning the repo run
 
 ```
@@ -30,13 +39,23 @@ Then back to the top folder run
 npm run build
 ```
 
-Then move the files in "ml-models" into the built dist/ folder. Then create a folder
-"models/bcmc-data" in dist/ and populate with the zfp compressed datasets. 
+Then move the files in the ml-models/ folder into the built dist/ folder. 
 
 You can then serve the application from the dist/ folder using 
 ```
 python -m http.server
 ```
+Which will default to serving the application at localhost:8000.
+
+### Running Benchmarks
+Once the application is hosted, visit 'localhost:8000/#autobenchmark=0' to begin benchmarks. This will automatically run 27 benchmarks including the Plasma, Chameleon, and Miranda datasets at 360p, 720p, and 1080p, and download .json benchmark files to your default download location.
+
+### Converting Benchmarks to Data Figure
+Once the autobenchmark is complete, move all downloaded .json files to the benchmarks/ folder in this repo. Run
+```
+python plot_figure6.py
+```
+and files labeled "ResultsAt85%Complete.png" and "ResultsAt100%Complete.png" will be created in the folder, matching Figure 6 in the TVCG paper.
 
 ## Model Training
 Another repo is provided containing all the model training code [here](https://github.com/ldyken53/TVCG-progiso-training). This repo includes checkpoints for our pretrained model and example data for training new models. Unlike this repo, an NVIDIA GPU with CUDA support is required for model training code. 
