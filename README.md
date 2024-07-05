@@ -37,3 +37,6 @@ You can then serve the application from the dist/ folder using
 ```
 python -m http.server
 ```
+
+## Model Training
+Another repo is provided containing all the model training code [here](https://github.com/ldyken53/TVCG-progiso-training). This repo includes checkpoints for our pretrained model and example data for training new models. Unlike this repo, an NVIDIA GPU with CUDA support is required for model training code. 
