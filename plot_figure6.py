@@ -30,8 +30,9 @@ match_benchmark_name = re.compile("(\\w+)\\/perf-(\\w+)_(\\d+x\\d+x\\d+)_\\w+.ra
 match_benchmark_name2 = re.compile("(\\w+)\\/perf-(\\w+)_(\\d+x\\d+x\\d+)_\\w+.raw.crate\\d-[a-z]+-[a-z]+-([0-9]+)p-([0-9])ssc-.*\\.json")
 
 # Compute and plot utilization statistics for the benchmarks
-for results_file in "benchmarks/":
-    file_name = os.path.join(dir, results_file)
+directory = "benchmarks"
+for results_file in os.listdir(directory):
+    file_name = os.path.join(directory, results_file)
     m = match_benchmark_name.search(file_name)
     if not m:
         m = match_benchmark_name2.search(file_name)
@@ -79,23 +80,23 @@ for results_file in "benchmarks/":
 
 
 resolution_order = {
-    "640x368": 0,
+    "640x360": 0,
     "1280x720": 1,
-    "1920x1088": 2
+    "1920x1080": 2
 }
 colors = {
-    "640x368": "tab:blue",
+    "640x360": "tab:blue",
     "1280x720": "tab:orange",
-    "1920x1088": "tab:green"
+    "1920x1080": "tab:green"
 }
 
 for k in image_completeness:
     fig, ax = plt.subplots()
     # Build the plot sets for the bars to have the right labels/grouping
     resolution_results = {
-        "640x368": [],
+        "640x360": [],
         "1280x720": [],
-        "1920x1088": []
+        "1920x1080": []
     }
     max_y = 0
     idx = 0
