@@ -13,7 +13,7 @@ Note that due to initially loading the datasets, it will take some time for the 
 All datasets are available on the [Open SciVis Datasets page](https://klacansky.com/open-scivis-datasets/). 
 
 ## Getting Started
-For either install, it is necessary to be on a device with both npm and python installed. Code was created using Windows Subsystem for Linux, but is compatible with Windows, Mac or Linux. 
+For either install, it is necessary to be on a device with both npm and python installed. Code was created using Windows Subsystem for Linux. 
 
 ### Automatic Install
 After cloning the repo, install needed dependencies and start serving the application with
