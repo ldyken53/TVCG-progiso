@@ -48,6 +48,9 @@ import * as ort from 'onnxruntime-web/webgpu';
     document.getElementById("recomputeSurface").onclick = () => {runBenchmark("manualSingle")};
     document.getElementById("saveScreenShotButton").onclick = () => {saveScreenShotButton()};
 
+    var benchmarkConfigs = generateBenchmarkConfigurations();
+    console.log(`# of benchmarkConfigs to run ${benchmarkConfigs.length}`);
+
     var dataset = datasets.skull;
     let autobenchmarkIndex = -1;
     if (window.location.hash) {
@@ -125,17 +128,14 @@ import * as ort from 'onnxruntime-web/webgpu';
     var requestBenchmark = null;
     var saveScreenshot = false;
 
-    var benchmarkConfigs = generateBenchmarkConfigurations();
-    console.log(`# of benchmarkConfigs to run ${benchmarkConfigs.length}`);
-
     var volumeDims = getVolumeDimensions(dataset.name);
     var zfpDataName = dataset.name + ".zfp";
     var volumeURL = null;
-    if (window.location.hostname != "localhost") {
-        volumeURL = "https://cdn.willusher.io/bcmc-demo-data/" + zfpDataName;
-    } else {
-        volumeURL = "/models/bcmc-data/" + zfpDataName;
-    }
+    // if (window.location.hostname != "localhost") {
+    volumeURL = "https://cdn.willusher.io/bcmc-demo-data/" + zfpDataName;
+    // } else {
+    //     volumeURL = "/models/bcmc-data/" + zfpDataName;
+    // }
     var compressedData =
         await fetch(volumeURL).then((res) => res.arrayBuffer().then(function (arr) {
             return new Uint8Array(arr);
