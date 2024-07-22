@@ -1,7 +1,7 @@
 import { ExclusiveScanPipeline, alignTo } from "./exclusive_scan";
 import { StreamCompact } from "./stream_compact";
-import { RadixSorter } from "./radix_sort_by_key";
 import { LRUCache } from "./lru_cache";
+import { GPUSorter } from "./radix_sort/sort";
 import * as shaders from "./embedded_shaders";
 import { buildPushConstantsBuffer } from "./util";
 
@@ -622,21 +622,21 @@ export var VolumeRaycaster = function(
     });
 
     // Intermediate buffers for sorting ray IDs using their block ID as the key
-    this.radixSorter = new RadixSorter(device);
+    this.sorter = new GPUSorter(this.device, 32);
     this.rayIDBuffer = device.createBuffer({
-        size: this.radixSorter.getAlignedSize(this.width * this.height * this.startSpecCount) * 4,
+        size: this.width * this.height * this.startSpecCount * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     });
     this.compactSpeculativeIDBuffer = device.createBuffer({
-        size: this.radixSorter.getAlignedSize(this.width * this.height * this.startSpecCount) * 4,
+        size: this.width * this.height * this.startSpecCount * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     });
     this.rayBlockIDBuffer = device.createBuffer({
-        size: this.radixSorter.getAlignedSize(this.width * this.height * this.startSpecCount) * 4,
+        size: this.width * this.height * this.startSpecCount * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     });
     this.compactRayBlockIDBuffer = device.createBuffer({
-        size: this.radixSorter.getAlignedSize(this.width * this.height * this.startSpecCount) * 4,
+        size: this.width * this.height * this.startSpecCount * 4,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
     });
     this.rayActiveBuffer = device.createBuffer({
@@ -2089,8 +2089,8 @@ VolumeRaycaster.prototype.sortActiveRaysByBlock = async function(numRaysActive) 
     console.log(`sortActiveRaysByBlock: Compacts ${endCompacts - startCompacts}ms`);
 
     var compactRayBlockIDBufferCopy = this.device.createBuffer({
-        size: this.radixSorter.getAlignedSize(this.compactRayBlockIDBuffer.size / 4) * 4,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        size: this.compactRayBlockIDBuffer.size,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
     });
     var commandEncoder = this.device.createCommandEncoder();
     commandEncoder.copyBufferToBuffer(this.compactRayBlockIDBuffer,
@@ -2102,11 +2102,23 @@ VolumeRaycaster.prototype.sortActiveRaysByBlock = async function(numRaysActive) 
     await this.device.queue.onSubmittedWorkDone();
 
     var start = performance.now();
-    // Sort active ray IDs by their block ID
-    await this.radixSorter.sort(
-        this.compactRayBlockIDBuffer, this.rayIDBuffer, numRaysActive, false);
-    await this.radixSorter.sort(
-        compactRayBlockIDBufferCopy, this.compactSpeculativeIDBuffer, numRaysActive, false);
+    const sortBuffers = this.sorter.createSortBuffers(numRaysActive);
+    const sortBuffers2 = this.sorter.createSortBuffers(numRaysActive);
+    const sortEncoder = this.device.createCommandEncoder();
+    sortEncoder.copyBufferToBuffer(this.compactRayBlockIDBuffer, 0, sortBuffers.keys, 0, numRaysActive * 4);
+    sortEncoder.copyBufferToBuffer(this.rayIDBuffer, 0, sortBuffers.values, 0, numRaysActive * 4);
+    sortEncoder.copyBufferToBuffer(compactRayBlockIDBufferCopy, 0, sortBuffers2.keys, 0, numRaysActive * 4);
+    sortEncoder.copyBufferToBuffer(this.compactSpeculativeIDBuffer, 0, sortBuffers2.values, 0, numRaysActive * 4);
+    this.sorter.sort(sortEncoder, this.device.queue, sortBuffers);
+    this.sorter.sort(sortEncoder, this.device.queue, sortBuffers2);
+    sortEncoder.copyBufferToBuffer(sortBuffers.keys, 0, this.compactRayBlockIDBuffer, 0, numRaysActive * 4);
+    sortEncoder.copyBufferToBuffer(sortBuffers.values, 0, this.rayIDBuffer, 0, numRaysActive * 4);
+    sortEncoder.copyBufferToBuffer(sortBuffers2.keys, 0, compactRayBlockIDBufferCopy, 0, numRaysActive * 4);
+    sortEncoder.copyBufferToBuffer(sortBuffers2.values, 0, this.compactSpeculativeIDBuffer, 0, numRaysActive * 4);
+    this.device.queue.submit([sortEncoder.finish()]);
+    await this.device.queue.onSubmittedWorkDone();
+    sortBuffers.destroy();
+    sortBuffers2.destroy();
     var end = performance.now();
     console.log(`sortActiveRaysByBlock: Sort rays by blocks: ${end - start}ms`);
 };
