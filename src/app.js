@@ -131,11 +131,11 @@ import * as ort from 'onnxruntime-web/webgpu';
     var volumeDims = getVolumeDimensions(dataset.name);
     var zfpDataName = dataset.name + ".zfp";
     var volumeURL = null;
-    // if (window.location.hostname != "localhost") {
+    if (window.location.hostname != "localhost") {
     volumeURL = "https://cdn.willusher.io/bcmc-demo-data/" + zfpDataName;
-    // } else {
-    //     volumeURL = "/models/bcmc-data/" + zfpDataName;
-    // }
+    } else {
+        volumeURL = "/models/bcmc-data/" + zfpDataName;
+    }
     var compressedData =
         await fetch(volumeURL).then((res) => res.arrayBuffer().then(function (arr) {
             return new Uint8Array(arr);
