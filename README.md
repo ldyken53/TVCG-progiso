@@ -39,7 +39,16 @@ Then back to the top folder run
 npm run build
 ```
 
-Then move the files in the ml-models/ folder into the built dist/ folder. 
+Then move the files in the ml-models/ folder into the built dist/ folder.
+
+Then download the compressed datasets (Chameleon, Magnetic Reconnection, and Miranda) using the following commands
+```
+pip install gdown
+gdown 1iAN-LucPq6nUAh74I1BIXa24KaXo650k
+gdown 1t98uqIjGB99k3Xso8R1EQL4fgefHlKBR
+gdown 1YTBFATCaK1ApFpcefEuAj5iQTPm998pU
+```
+and create a folder dist/bcmc-data/ and move them there.
 
 You can then serve the application from the dist/ folder using 
 ```
