@@ -12,8 +12,8 @@ Note that due to initially loading the datasets, it will take some time for the 
 
 All datasets are available on the [Open SciVis Datasets page](https://klacansky.com/open-scivis-datasets/). 
 
-## Getting Started
-For either install, it is necessary to be on a device with both npm and python installed.
+## Recreating a Representative Figure
+For either install, it is necessary to be on a device with both npm and python installed. Code was created using Windows Subsystem for Linux. 
 
 ### Automatic Install
 After cloning the repo, install needed dependencies and start serving the application with
@@ -48,7 +48,7 @@ python -m http.server
 Which will default to serving the application at localhost:8000.
 
 ### Running Benchmarks
-Once the application is hosted, visit 'localhost:8000/#autobenchmark=0' to begin benchmarks. This will automatically run 27 benchmarks including the Plasma, Chameleon, and Miranda datasets at 360p, 720p, and 1080p, and download .json benchmark files to your default download location.
+Once the application is hosted, visit 'localhost:8000/#autobenchmark=0' to begin benchmarks. This will automatically run 27 benchmarks including the Plasma, Chameleon, and Miranda datasets at 360p, 720p, and 1080p, and download .json benchmark files to your default download location. A video showing the benchmarking process is [here](https://www.youtube.com/watch?v=ALRQYkR2qOs&ab_channel=LandonDyken).
 
 ### Converting Benchmarks to Data Figure
 Once the autobenchmark is complete, move all downloaded .json files to the benchmarks/ folder in this repo. Run
