@@ -2,7 +2,7 @@
 
 npm install
 cd shaders/
-python embed_shaders.py ./glslc.exe ./tint.exe
+python3 embed_shaders.py ./glslc.exe ./tint.exe
 cd ..
 npm run build
 pip install gdown
@@ -17,4 +17,4 @@ cp ml-models/noof640-ultraminiv12.onnx dist/
 cp ml-models/noof1280-ultraminiv12.onnx dist/
 cp ml-models/noof1920-ultraminiv12.onnx dist/
 cd dist/
-python -m http.server
+python3 -m http.server

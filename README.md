@@ -13,7 +13,7 @@ Note that due to initially loading the datasets, it will take some time for the 
 All datasets are available on the [Open SciVis Datasets page](https://klacansky.com/open-scivis-datasets/). 
 
 ## Recreating a Representative Figure
-For either install, it is necessary to be on a device with both npm and python installed. Code was created using Windows Subsystem for Linux. 
+For either install, it is necessary to be on a device with both npm and python3 installed. Code was created using Windows Subsystem for Linux. 
 
 ### Automatic Install
 After cloning the repo, first make the run_server.sh script executable by running
@@ -35,7 +35,7 @@ npm install
 
 Then navigate to the shaders/ folder and run
 ```
-python embed_shaders.py ./glslc.exe ./tint.exe
+python3 embed_shaders.py ./glslc.exe ./tint.exe
 ```
 
 Then back to the top folder run 
@@ -56,7 +56,7 @@ and create a folder dist/bcmc-data/ and move them there.
 
 You can then serve the application from the dist/ folder using 
 ```
-python -m http.server
+python3 -m http.server
 ```
 Which will default to serving the application at localhost:8000.
 
@@ -66,7 +66,7 @@ Once the application is hosted, visit 'localhost:8000/#autobenchmark=0' to begin
 ### Converting Benchmarks to Data Figure
 Once the autobenchmark is complete, move all downloaded .json files to the benchmarks/ folder in this repo. Run
 ```
-python plot_figure6.py
+python3 plot_figure6.py
 ```
 and files labeled "ResultsAt85%Complete.png" and "ResultsAt100%Complete.png" will be created in the folder, matching Figure 6 in the TVCG paper.
 
