@@ -16,9 +16,9 @@ All datasets are available on the [Open SciVis Datasets page](https://klacansky.
 For either install, it is necessary to be on a device with both npm and python3 installed. Code was created using Windows Subsystem for Linux. 
 
 ### Automatic Install
-After cloning the repo, first make the run_server.sh script executable by running
+After cloning the repo, first make all the scripts executable by running
 ```
-chmod +x run_server.sh
+chmod +x run_server.sh shaders/glslc.exe shaders/tint.exe
 ```
 Then one can install needed dependencies and start serving the application with
 ```
