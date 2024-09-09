@@ -5,7 +5,8 @@ cd shaders/
 python3 embed_shaders.py ./glslc.exe ./tint.exe
 cd ..
 npm run build
-pip install gdown
+python3 -m pip install gdown numpy matplotlib
+. $HOME/.profile
 gdown 1iAN-LucPq6nUAh74I1BIXa24KaXo650k
 gdown 1t98uqIjGB99k3Xso8R1EQL4fgefHlKBR
 gdown 1YTBFATCaK1ApFpcefEuAj5iQTPm998pU
