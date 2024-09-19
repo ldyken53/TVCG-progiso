@@ -13,7 +13,9 @@ Note that due to initially loading the datasets, it will take some time for the 
 All datasets are available on the [Open SciVis Datasets page](https://klacansky.com/open-scivis-datasets/). 
 
 ## Recreating a Representative Figure
-Code was tested on a device running Windows Subsystem for Linux. For either install, it is necessary to be on a device with both npm and python3 installed. To install these in WSL, it is recommended to run
+Code was tested on a device running Ubuntu in Windows Subsystem for Linux (WSL), python v3.10.12, npm v8.5.1, node v12.22.9. 
+
+It is necessary to be on a device with node, npm and python3 with pip installed. To install these in WSL, it is recommended to run
 ```
 sudo apt update
 sudo apt install nodejs npm python3-pip
