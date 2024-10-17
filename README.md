@@ -72,7 +72,7 @@ python3 -m http.server
 Which will default to serving the application at localhost:8000.
 
 ### Running Benchmarks
-Once the application is hosted, visit 'localhost:8000/#autobenchmark=0' to begin benchmarks. This will automatically run 27 benchmarks including the Plasma, Chameleon, and Miranda datasets at 360p, 720p, and 1080p, and download .json benchmark files to your default download location. A video showing the benchmarking process is [here](https://www.youtube.com/watch?v=ALRQYkR2qOs&ab_channel=LandonDyken).
+Once the application is hosted, visit 'localhost:8000/#autobenchmark=0' to begin benchmarks. This will automatically run 27 benchmarks including the Plasma, Chameleon, and Miranda datasets at 360p, 720p, and 1080p, and download .json benchmark files to your default download location. Make sure to allow automatic downloads in your browser before running these benchmarks, follow the instructions [here](https://commongoalsystems.zendesk.com/hc/en-us/articles/9197509173005-How-do-I-enable-automatic-downloads) and add the url http://localhost:8000 to your automatic downloads list. A video showing the benchmarking process is [here](https://www.youtube.com/watch?v=ALRQYkR2qOs&ab_channel=LandonDyken).
 
 ### Converting Benchmarks to Data Figure
 Once the autobenchmark is complete, move all downloaded .json files to the benchmarks/ folder in this repo. Run
