@@ -102,13 +102,18 @@ for k in image_completeness:
     idx = 0
     for name in dataset_labels.keys():
         for res in resolution_order.keys():
-            prog_iso_scaling[k][name][res].sort()
+            if prog_iso_scaling[k][name].get(res):
+                prog_iso_scaling[k][name][res].sort()
 
-            # We need to plot each bar on its own to get the coloring by resolution
-            resolution_results[res].append(prog_iso_scaling[k][name][res][0])
+                # We need to plot each bar on its own to get the coloring by resolution
+                resolution_results[res].append(prog_iso_scaling[k][name][res][0])
 
-            max_y = max(max_y, prog_iso_scaling[k][name][res][0])
-            idx += 1
+                max_y = max(max_y, prog_iso_scaling[k][name][res][0])
+                idx += 1
+            else:
+                resolution_results[res].append(0)
+                idx += 1
+
 
     group_width = 0.5
     offset = -group_width / 3.0
